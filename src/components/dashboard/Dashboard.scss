@@ -1,0 +1,32 @@
+.dashboard-container {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+
+  .ant-card {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .ant-card-head-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #262626;
+    }
+  }
+
+  .ant-table {
+    .ant-table-thead > tr > th {
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: #f5f5f5;
+    }
+  }
+
+  .ant-table-pagination {
+    margin: 16px 0;
+  }
+}

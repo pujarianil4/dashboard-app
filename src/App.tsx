@@ -1,67 +1,26 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { useLogin } from "./hooks/useLogin";
-import { logout } from "./api/auth";
+import Login from "./components/auth/Login";
+import Dashboard from "./components/dashboard/Dashboard";
 import { getAllTxs } from "./api/transaction";
 
 function App() {
-  const [email, setEmail] = useState("kishore@endl.app");
-  const [password, setPassword] = useState("G7m@xQ2w!");
-
-  const mutation = useLogin();
-
-  const handleLogin = () => {
-    mutation.mutate(
-      { email, password },
-      {
-        onSuccess: (data) => {
-          console.log("Login Successful:", data);
-        },
-        onError: (error) => {
-          console.error("Login Failed:", error);
-        },
-      }
-    );
-  };
-
-  const handleLogout = async () => {
-    // await logout();
-    const data = await getAllTxs();
-    console.log("data", data);
-  };
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // const get = async () => {
-    //   const data = await getAllTxs();
-    //   console.log("data", data);
-    // };
-    // get();
+    // Check if user is logged in (you can implement your own logic here)
+    const checkAuth = async () => {
+      try {
+        await getAllTxs();
+        setIsLoggedIn(true);
+      } catch (error) {
+        setIsLoggedIn(false);
+      }
+    };
+    checkAuth();
   }, []);
 
-  return (
-    <>
-      <div>
-        <h2>Login</h2>
-        <input
-          type='email'
-          placeholder='Email'
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type='password'
-          placeholder='Password'
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button onClick={handleLogin} disabled={mutation.isPending}>
-          {mutation.isPending ? "Logging in..." : "Login"}
-        </button>
-
-        <button onClick={handleLogout}>Logout</button>
-      </div>
-    </>
-  );
+  return <div className='app'>{isLoggedIn ? <Dashboard /> : <Login />}</div>;
 }
 
 export default App;
