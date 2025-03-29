@@ -1,4 +1,12 @@
-import { Table, Card, Typography } from "antd";
+import {
+  Table,
+  Card,
+  Typography,
+  Select,
+  DatePicker,
+  Space,
+  Button,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 import { getAllTxs } from "../../api/transaction";
@@ -6,6 +14,7 @@ import dayjs from "dayjs";
 import "./Dashboard.scss";
 
 const { Title } = Typography;
+const { RangePicker } = DatePicker;
 
 interface Transaction {
   createdOn: string;
@@ -55,6 +64,20 @@ const Dashboard = () => {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"ascend" | "descend" | null>(null);
 
+  // Filter states
+  const [status, setStatus] = useState<string | null>(null);
+  const [endlTransactionMode, setEndlTransactionMode] = useState<
+    string[] | null
+  >(null);
+  const [depositType, setDepositType] = useState<string[] | null>(null);
+  const [recipientType, setRecipientType] = useState<string[] | null>(null);
+  const [sourceCurrency, setSourceCurrency] = useState<string[] | null>(null);
+  const [sentOrReceived, setSentOrReceived] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<string | null>(null);
+  const [dateRangeValue, setDateRangeValue] = useState<
+    [dayjs.Dayjs, dayjs.Dayjs] | null
+  >(null);
+
   const fetchTransactions = async (
     page: number,
     size: number,
@@ -63,14 +86,30 @@ const Dashboard = () => {
   ) => {
     try {
       setLoading(true);
+
+      // Prepare date parameters if custom date range is selected
+      let startDate = null;
+      let endDate = null;
+      if (dateRange === "CUSTOM" && dateRangeValue) {
+        startDate = dateRangeValue[0].format("DD-MM-YYYY");
+        endDate = dateRangeValue[1].format("DD-MM-YYYY");
+      }
+
       const response = (await getAllTxs({
         page,
         pageSize: size,
-        sortBy: sortBy ? `${sortBy}, ${sortDirection}` : undefined,
+        sortBy: sortBy ? `${sortBy}, ${sortDirection}` : null,
+        status: status as any,
+        endlTransactionMode: endlTransactionMode as any,
+        depositType: depositType as any,
+        recipientType: recipientType as any,
+        sourceCurrency: sourceCurrency as any,
+        sentOrReceived: sentOrReceived as any,
+        dateRange: dateRange as any,
+        startDate,
+        endDate,
       })) as ApiResponse;
-      console.log("response", response);
 
-      // Transform the data to match our Transaction interface
       const transformedData = response.data.txns.map((tx) => ({
         createdOn: tx.createdOn,
         nameOrAlias: tx.nameOrAlias,
@@ -99,13 +138,71 @@ const Dashboard = () => {
       sortField || undefined,
       sortOrder === "ascend" ? "asc" : "desc"
     );
-  }, [currentPage, pageSize, sortField, sortOrder]);
+  }, [
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    status,
+    endlTransactionMode,
+    depositType,
+    recipientType,
+    sourceCurrency,
+    sentOrReceived,
+    dateRange,
+    dateRangeValue,
+  ]);
 
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setCurrentPage(pagination.current);
     setPageSize(pagination.pageSize);
     setSortField(sorter.field);
     setSortOrder(sorter.order);
+  };
+
+  const handleFilterChange = (filterType: string, value: any) => {
+    switch (filterType) {
+      case "status":
+        setStatus(value);
+        break;
+      case "endlTransactionMode":
+        setEndlTransactionMode(value);
+        break;
+      case "depositType":
+        setDepositType(value);
+        break;
+      case "recipientType":
+        setRecipientType(value);
+        break;
+      case "sourceCurrency":
+        setSourceCurrency(value);
+        break;
+      case "sentOrReceived":
+        setSentOrReceived(value);
+        break;
+      case "dateRange":
+        setDateRange(value);
+        if (value !== "CUSTOM") {
+          setDateRangeValue(null);
+        }
+        break;
+      case "dateRangeValue":
+        setDateRangeValue(value);
+        break;
+    }
+  };
+
+  const clearFilters = () => {
+    setStatus(null);
+    setEndlTransactionMode(null);
+    setDepositType(null);
+    setRecipientType(null);
+    setSourceCurrency(null);
+    setSentOrReceived(null);
+    setDateRange(null);
+    setDateRangeValue(null);
+    setSortField(null);
+    setSortOrder(null);
   };
 
   const columns: ColumnsType<Transaction> = [
@@ -132,7 +229,7 @@ const Dashboard = () => {
       key: "amountRequested",
       render: (amount: number, record: Transaction) =>
         `${record.sourceCurrency} ${Number(amount).toFixed(2)}`,
-      sorter: (a, b) => a.amountRequested - b.amountRequested,
+      sorter: true,
     },
     {
       title: "Amount Received",
@@ -140,15 +237,14 @@ const Dashboard = () => {
       key: "destinationAmount",
       render: (amount: string, record: Transaction) =>
         `${record.destinationCurrency} ${Number(amount).toFixed(2)}`,
-      sorter: (a, b) =>
-        Number(a.destinationAmount) - Number(b.destinationAmount),
+      sorter: true,
     },
     {
       title: "Exchange Rate",
       dataIndex: "fxRate",
       key: "fxRate",
       render: (rate: string) => `1:${Number(rate).toFixed(2)}`,
-      sorter: (a, b) => Number(a.fxRate) - Number(b.fxRate),
+      sorter: true,
     },
     {
       title: "Status",
@@ -175,6 +271,126 @@ const Dashboard = () => {
     <div className='dashboard-container'>
       <Card>
         <Title level={2}>Transaction History</Title>
+
+        <Space direction='vertical' style={{ width: "100%", marginBottom: 16 }}>
+          <Space wrap>
+            <Select
+              placeholder='Status'
+              allowClear
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("status", value)}
+              value={status}
+              options={[
+                { label: "INITIATED", value: "INITIATED" },
+                { label: "IN_REVIEW", value: "IN_REVIEW" },
+                { label: "PENDING", value: "PENDING" },
+                { label: "COMPLETE", value: "COMPLETE" },
+                { label: "REJECTED", value: "REJECTED" },
+              ]}
+            />
+
+            <Select
+              placeholder='Transaction Mode'
+              allowClear
+              mode='multiple'
+              style={{ width: 200 }}
+              onChange={(value) =>
+                handleFilterChange("endlTransactionMode", value)
+              }
+              value={endlTransactionMode}
+              options={[
+                { label: "STABLE_COIN_TO_FIAT", value: "STABLE_COIN_TO_FIAT" },
+                { label: "FIAT_TO_STABLE_COIN", value: "FIAT_TO_STABLE_COIN" },
+                { label: "FIAT_TO_FIAT", value: "FIAT_TO_FIAT" },
+              ]}
+            />
+
+            <Select
+              placeholder='Deposit Type'
+              allowClear
+              mode='multiple'
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("depositType", value)}
+              value={depositType}
+              options={[
+                { label: "CREDIT_CARD", value: "CREDIT_CARD" },
+                { label: "DEBIT_CARD", value: "DEBIT_CARD" },
+                { label: "BANK_TRANSFER", value: "BANK_TRANSFER" },
+                { label: "CRYPTO_WALLET", value: "CRYPTO_WALLET" },
+                {
+                  label: "CRYPTO_MANUAL_WALLET",
+                  value: "CRYPTO_MANUAL_WALLET",
+                },
+                { label: "ENDL_ACCOUNT", value: "ENDL_ACCOUNT" },
+              ]}
+            />
+
+            <Select
+              placeholder='Recipient Type'
+              allowClear
+              mode='multiple'
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("recipientType", value)}
+              value={recipientType}
+              options={[
+                { label: "INDIVIDUAL", value: "INDIVIDUAL" },
+                { label: "BUSINESS", value: "BUSINESS" },
+              ]}
+            />
+
+            <Select
+              placeholder='Source Currency'
+              allowClear
+              mode='multiple'
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("sourceCurrency", value)}
+              value={sourceCurrency}
+              options={[
+                { label: "USD", value: "USD" },
+                { label: "EUR", value: "EUR" },
+                { label: "USDC", value: "USDC" },
+              ]}
+            />
+
+            <Select
+              placeholder='Sent/Received'
+              allowClear
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("sentOrReceived", value)}
+              value={sentOrReceived}
+              options={[
+                { label: "SENT", value: "SENT" },
+                { label: "RECEIVED", value: "RECEIVED" },
+              ]}
+            />
+
+            <Select
+              placeholder='Date Range'
+              allowClear
+              style={{ width: 200 }}
+              onChange={(value) => handleFilterChange("dateRange", value)}
+              value={dateRange}
+              options={[
+                { label: "ALL_TIME", value: "ALL_TIME" },
+                { label: "YESTERDAY", value: "YESTERDAY" },
+                { label: "LAST_7_DAYS", value: "LAST_7_DAYS" },
+                { label: "CUSTOM", value: "CUSTOM" },
+              ]}
+            />
+
+            {dateRange === "CUSTOM" && (
+              <RangePicker
+                onChange={(dates) =>
+                  handleFilterChange("dateRangeValue", dates)
+                }
+                value={dateRangeValue}
+              />
+            )}
+
+            <Button onClick={clearFilters}>Clear Filters</Button>
+          </Space>
+        </Space>
+
         <Table
           columns={columns}
           dataSource={transactions}
