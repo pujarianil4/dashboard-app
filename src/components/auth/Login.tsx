@@ -1,6 +1,8 @@
 import { Form, Input, Button, Card, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useLogin } from "../../hooks/useLogin";
+import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import "./Login.scss";
 
 interface LoginFormValues {
@@ -11,29 +13,55 @@ interface LoginFormValues {
 const Login = () => {
   const [form] = Form.useForm();
   const mutation = useLogin();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const onFinish = async (values: LoginFormValues) => {
-    message.success("Login successful!");
-    // console.log("Starting login process...");
+    console.log("Starting login process with values:", values);
     try {
       const response = await mutation.mutateAsync(values);
-      console.log("Login response:", response);
+      console.log("Raw API response:", response);
 
-      if (response) {
-        console.log("Login successful, showing success message");
-        message.success("Login successful!");
+      // Check if response exists and has expected structure
+      if (response && typeof response === "object") {
+        console.log("Login successful, response:", response);
+
+        // First set the authentication state
+        login();
+
+        // Show success message
+        message.success({
+          content: "Login successful!",
+          duration: 3,
+        });
+
+        // Reset form
         form.resetFields();
+
+        // Use setTimeout to ensure state updates are processed
+        setTimeout(() => {
+          console.log("Navigating to dashboard...");
+          navigate("/dashboard", { replace: true });
+        }, 100);
       } else {
-        console.log("Login response is empty");
-        message.error("Login failed: No response from server");
+        console.warn("Unexpected response format:", response);
+        message.error({
+          content: "Login failed: Invalid response format",
+          duration: 3,
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error details:", error);
-      message.error(
-        error instanceof Error
-          ? error.message
-          : "Login failed. Please check your credentials."
-      );
+      // Check if error has a response from the server
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed. Please check your credentials.";
+
+      message.error({
+        content: errorMessage,
+        duration: 3,
+      });
     }
   };
 

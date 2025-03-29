@@ -1,26 +1,15 @@
-import { useEffect, useState } from "react";
+import { BrowserRouter } from "react-router-dom";
 import "./App.css";
-import Login from "./components/auth/Login";
-import Dashboard from "./components/dashboard/Dashboard";
-import { getAllTxs } from "./api/transaction";
+import AppRoutes from "./routes";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    // Check if user is logged in (you can implement your own logic here)
-    const checkAuth = async () => {
-      try {
-        await getAllTxs();
-        setIsLoggedIn(true);
-      } catch (error) {
-        setIsLoggedIn(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  return <div className='app'>{isLoggedIn ? <Dashboard /> : <Login />}</div>;
+  return (
+    <BrowserRouter>
+      <div className='app'>
+        <AppRoutes />
+      </div>
+    </BrowserRouter>
+  );
 }
 
 export default App;

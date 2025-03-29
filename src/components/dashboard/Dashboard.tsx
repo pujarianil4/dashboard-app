@@ -52,13 +52,21 @@ const Dashboard = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"ascend" | "descend" | null>(null);
 
-  const fetchTransactions = async (page: number, size: number) => {
+  const fetchTransactions = async (
+    page: number,
+    size: number,
+    sortBy?: string,
+    sortDirection?: string
+  ) => {
     try {
       setLoading(true);
       const response = (await getAllTxs({
         page,
         pageSize: size,
+        sortBy: sortBy ? `${sortBy}, ${sortDirection}` : undefined,
       })) as ApiResponse;
       console.log("response", response);
 
@@ -85,12 +93,19 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchTransactions(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+    fetchTransactions(
+      currentPage,
+      pageSize,
+      sortField || undefined,
+      sortOrder === "ascend" ? "asc" : "desc"
+    );
+  }, [currentPage, pageSize, sortField, sortOrder]);
 
-  const handleTableChange = (pagination: any) => {
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setCurrentPage(pagination.current);
     setPageSize(pagination.pageSize);
+    setSortField(sorter.field);
+    setSortOrder(sorter.order);
   };
 
   const columns: ColumnsType<Transaction> = [
@@ -99,8 +114,7 @@ const Dashboard = () => {
       dataIndex: "createdOn",
       key: "createdOn",
       render: (text: string) => dayjs(text).format("YYYY-MM-DD HH:mm:ss"),
-      sorter: (a, b) =>
-        new Date(a.createdOn).getTime() - new Date(b.createdOn).getTime(),
+      sorter: true,
     },
     {
       title: "Name",
@@ -118,6 +132,7 @@ const Dashboard = () => {
       key: "amountRequested",
       render: (amount: number, record: Transaction) =>
         `${record.sourceCurrency} ${Number(amount).toFixed(2)}`,
+      sorter: (a, b) => a.amountRequested - b.amountRequested,
     },
     {
       title: "Amount Received",
@@ -125,12 +140,15 @@ const Dashboard = () => {
       key: "destinationAmount",
       render: (amount: string, record: Transaction) =>
         `${record.destinationCurrency} ${Number(amount).toFixed(2)}`,
+      sorter: (a, b) =>
+        Number(a.destinationAmount) - Number(b.destinationAmount),
     },
     {
       title: "Exchange Rate",
       dataIndex: "fxRate",
       key: "fxRate",
       render: (rate: string) => `1:${Number(rate).toFixed(2)}`,
+      sorter: (a, b) => Number(a.fxRate) - Number(b.fxRate),
     },
     {
       title: "Status",
@@ -140,9 +158,9 @@ const Dashboard = () => {
         <span
           style={{
             color:
-              status === "COMPLETED"
+              status === "COMPLETE"
                 ? "#52c41a"
-                : status === "FAILED"
+                : status === "REJECTED"
                 ? "#ff4d4f"
                 : "#faad14",
           }}
