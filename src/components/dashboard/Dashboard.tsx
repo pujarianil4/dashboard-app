@@ -6,15 +6,33 @@ import {
   DatePicker,
   Space,
   Button,
+  Row,
+  Col,
+  Tag,
+  Tooltip,
+  Input,
+  Divider,
+  Badge,
+  Statistic,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getAllTxs } from "../../api/transaction";
 import dayjs from "dayjs";
+import {
+  ReloadOutlined,
+  FilterOutlined,
+  SearchOutlined,
+  ClearOutlined,
+  TransactionOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+} from "@ant-design/icons";
 import "./Dashboard.scss";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { Search } = Input;
 
 interface Transaction {
   createdOn: string;
@@ -78,6 +96,25 @@ const Dashboard = () => {
     [dayjs.Dayjs, dayjs.Dayjs] | null
   >(null);
 
+  const tableRef = useRef<any>(null);
+
+  const getSortField = (field: string | null): string | null => {
+    switch (field) {
+      case "createdOn":
+        return "createdOn";
+      case "nameOrAlias":
+        return "alias";
+      case "amountRequested":
+        return "sourceAmount";
+      case "destinationAmount":
+        return "destinationAmount";
+      case "status":
+        return "sentOrReceived";
+      default:
+        return null;
+    }
+  };
+
   const fetchTransactions = async (
     page: number,
     size: number,
@@ -95,10 +132,16 @@ const Dashboard = () => {
         endDate = dateRangeValue[1].format("DD-MM-YYYY");
       }
 
+      // Get the correct sort field name
+      const sortFieldName = getSortField(sortBy || null);
+      const sortByParam = sortFieldName
+        ? `${sortFieldName},${sortDirection}`
+        : null;
+
       const response = (await getAllTxs({
         page,
         pageSize: size,
-        sortBy: sortBy ? `${sortBy}, ${sortDirection}` : null,
+        sortBy: sortByParam,
         status: status as any,
         endlTransactionMode: endlTransactionMode as any,
         depositType: depositType as any,
@@ -203,6 +246,27 @@ const Dashboard = () => {
     setDateRangeValue(null);
     setSortField(null);
     setSortOrder(null);
+
+    if (tableRef.current) {
+      tableRef.current.clearSort();
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "COMPLETE":
+        return "success";
+      case "REJECTED":
+        return "error";
+      case "INITIATED":
+        return "processing";
+      case "IN_REVIEW":
+        return "warning";
+      case "PENDING":
+        return "default";
+      default:
+        return "default";
+    }
   };
 
   const columns: ColumnsType<Transaction> = [
@@ -210,201 +274,346 @@ const Dashboard = () => {
       title: "Date & Time",
       dataIndex: "createdOn",
       key: "createdOn",
-      render: (text: string) => dayjs(text).format("YYYY-MM-DD HH:mm:ss"),
+      render: (text: string) => (
+        <Tooltip title={dayjs(text).format("YYYY-MM-DD HH:mm:ss")}>
+          <Text>{dayjs(text).format("MMM DD, YYYY HH:mm")}</Text>
+        </Tooltip>
+      ),
       sorter: true,
+      width: 180,
     },
     {
       title: "Name",
       dataIndex: "nameOrAlias",
       key: "nameOrAlias",
+      width: 150,
+      sorter: true,
     },
     {
       title: "Deposit Method",
       dataIndex: "depositRail",
       key: "depositRail",
+      width: 150,
     },
     {
       title: "Amount Sent",
       dataIndex: "amountRequested",
       key: "amountRequested",
-      render: (amount: number, record: Transaction) =>
-        `${record.sourceCurrency} ${Number(amount).toFixed(2)}`,
+      render: (amount: number, record: Transaction) => (
+        <Text strong>
+          {record.sourceCurrency} {Number(amount).toFixed(2)}
+        </Text>
+      ),
       sorter: true,
+      width: 150,
     },
     {
       title: "Amount Received",
       dataIndex: "destinationAmount",
       key: "destinationAmount",
-      render: (amount: string, record: Transaction) =>
-        `${record.destinationCurrency} ${Number(amount).toFixed(2)}`,
+      render: (amount: string, record: Transaction) => (
+        <Text strong>
+          {record.destinationCurrency} {Number(amount).toFixed(2)}
+        </Text>
+      ),
       sorter: true,
+      width: 150,
     },
     {
       title: "Exchange Rate",
       dataIndex: "fxRate",
       key: "fxRate",
-      render: (rate: string) => `1:${Number(rate).toFixed(2)}`,
-      sorter: true,
+      render: (rate: string) => (
+        <Text type='secondary'>1:{Number(rate).toFixed(2)}</Text>
+      ),
+      width: 120,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
-        <span
-          style={{
-            color:
-              status === "COMPLETE"
-                ? "#52c41a"
-                : status === "REJECTED"
-                ? "#ff4d4f"
-                : "#faad14",
-          }}
-        >
-          {status}
-        </span>
+        <Tag color={getStatusColor(status)}>{status}</Tag>
       ),
+      width: 120,
     },
   ];
 
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (status) count++;
+    if (endlTransactionMode?.length) count++;
+    if (depositType?.length) count++;
+    if (recipientType?.length) count++;
+    if (sourceCurrency?.length) count++;
+    if (sentOrReceived) count++;
+    if (dateRange) count++;
+    if (dateRangeValue) count++;
+    if (sortField) count++;
+    return count;
+  };
+
   return (
     <div className='dashboard-container'>
-      <Card>
-        <Title level={2}>Transaction History</Title>
+      <Card
+        className='dashboard-card'
+        title={
+          <Row justify='space-between' align='middle'>
+            <Col>
+              <Space>
+                <TransactionOutlined
+                  style={{ fontSize: 24, color: "#1890ff" }}
+                />
+                <Title level={3} style={{ margin: 0 }}>
+                  Transaction History
+                </Title>
+              </Space>
+            </Col>
+            <Col>
+              <Space style={{ marginRight: 10 }}>
+                <Tooltip title='Clear all filters'>
+                  <Badge
+                    count={getActiveFiltersCount()}
+                    offset={[-5, 5]}
+                    style={{ marginRight: 8 }}
+                  >
+                    <Button
+                      icon={<ClearOutlined />}
+                      onClick={clearFilters}
+                      disabled={getActiveFiltersCount() === 0}
+                    />
+                  </Badge>
+                </Tooltip>
+                <Tooltip title='Refresh data'>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() =>
+                      fetchTransactions(
+                        currentPage,
+                        pageSize,
+                        sortField || undefined,
+                        sortOrder === "ascend" ? "asc" : "desc"
+                      )
+                    }
+                  />
+                </Tooltip>
+              </Space>
+            </Col>
+          </Row>
+        }
+      >
+        <Space direction='vertical' style={{ width: "100%" }} size='large'>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={8}>
+              <Card size='small' className='stat-card'>
+                <Statistic
+                  title='Total Transactions'
+                  value={totalCount}
+                  prefix={<TransactionOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size='small' className='stat-card'>
+                <Statistic
+                  title='Active Filters'
+                  value={getActiveFiltersCount()}
+                  prefix={<FilterOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Card size='small' className='stat-card'>
+                <Statistic
+                  title='Current Page'
+                  value={currentPage}
+                  suffix={`/ ${Math.ceil(totalCount / pageSize)}`}
+                />
+              </Card>
+            </Col>
+          </Row>
 
-        <Space direction='vertical' style={{ width: "100%", marginBottom: 16 }}>
-          <Space wrap>
-            <Select
-              placeholder='Status'
-              allowClear
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("status", value)}
-              value={status}
-              options={[
-                { label: "INITIATED", value: "INITIATED" },
-                { label: "IN_REVIEW", value: "IN_REVIEW" },
-                { label: "PENDING", value: "PENDING" },
-                { label: "COMPLETE", value: "COMPLETE" },
-                { label: "REJECTED", value: "REJECTED" },
-              ]}
-            />
+          <Card
+            size='small'
+            className='filters-card'
+            title={
+              <Space>
+                <FilterOutlined style={{ color: "#1890ff" }} />
+                <Text strong>Filters</Text>
+                {getActiveFiltersCount() > 0 && (
+                  <Tag color='blue'>{getActiveFiltersCount()} active</Tag>
+                )}
+              </Space>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Status'
+                  allowClear
+                  style={{ width: "100%" }}
+                  onChange={(value) => handleFilterChange("status", value)}
+                  value={status}
+                  options={[
+                    { label: "INITIATED", value: "INITIATED" },
+                    { label: "IN_REVIEW", value: "IN_REVIEW" },
+                    { label: "PENDING", value: "PENDING" },
+                    { label: "COMPLETE", value: "COMPLETE" },
+                    { label: "REJECTED", value: "REJECTED" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Transaction Mode'
+                  allowClear
+                  mode='multiple'
+                  style={{ width: "100%" }}
+                  onChange={(value) =>
+                    handleFilterChange("endlTransactionMode", value)
+                  }
+                  value={endlTransactionMode}
+                  options={[
+                    {
+                      label: "STABLE_COIN_TO_FIAT",
+                      value: "STABLE_COIN_TO_FIAT",
+                    },
+                    {
+                      label: "FIAT_TO_STABLE_COIN",
+                      value: "FIAT_TO_STABLE_COIN",
+                    },
+                    { label: "FIAT_TO_FIAT", value: "FIAT_TO_FIAT" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Deposit Type'
+                  allowClear
+                  mode='multiple'
+                  style={{ width: "100%" }}
+                  onChange={(value) => handleFilterChange("depositType", value)}
+                  value={depositType}
+                  options={[
+                    { label: "CREDIT_CARD", value: "CREDIT_CARD" },
+                    { label: "DEBIT_CARD", value: "DEBIT_CARD" },
+                    { label: "BANK_TRANSFER", value: "BANK_TRANSFER" },
+                    { label: "CRYPTO_WALLET", value: "CRYPTO_WALLET" },
+                    {
+                      label: "CRYPTO_MANUAL_WALLET",
+                      value: "CRYPTO_MANUAL_WALLET",
+                    },
+                    { label: "ENDL_ACCOUNT", value: "ENDL_ACCOUNT" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Recipient Type'
+                  allowClear
+                  mode='multiple'
+                  style={{ width: "100%" }}
+                  onChange={(value) =>
+                    handleFilterChange("recipientType", value)
+                  }
+                  value={recipientType}
+                  options={[
+                    { label: "INDIVIDUAL", value: "INDIVIDUAL" },
+                    { label: "BUSINESS", value: "BUSINESS" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Source Currency'
+                  allowClear
+                  mode='multiple'
+                  style={{ width: "100%" }}
+                  onChange={(value) =>
+                    handleFilterChange("sourceCurrency", value)
+                  }
+                  value={sourceCurrency}
+                  options={[
+                    { label: "USD", value: "USD" },
+                    { label: "EUR", value: "EUR" },
+                    { label: "USDC", value: "USDC" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Sent/Received'
+                  allowClear
+                  style={{ width: "100%" }}
+                  onChange={(value) =>
+                    handleFilterChange("sentOrReceived", value)
+                  }
+                  value={sentOrReceived}
+                  options={[
+                    { label: "SENT", value: "SENT" },
+                    { label: "RECEIVED", value: "RECEIVED" },
+                  ]}
+                />
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Select
+                  placeholder='Date Range'
+                  allowClear
+                  style={{ width: "100%" }}
+                  onChange={(value) => handleFilterChange("dateRange", value)}
+                  value={dateRange}
+                  options={[
+                    { label: "ALL_TIME", value: "ALL_TIME" },
+                    { label: "YESTERDAY", value: "YESTERDAY" },
+                    { label: "LAST_7_DAYS", value: "LAST_7_DAYS" },
+                    { label: "CUSTOM", value: "CUSTOM" },
+                  ]}
+                />
+              </Col>
+              {dateRange === "CUSTOM" && (
+                <Col xs={24} sm={12} md={8}>
+                  <RangePicker
+                    style={{ width: "100%" }}
+                    onChange={(dates) =>
+                      handleFilterChange("dateRangeValue", dates)
+                    }
+                    value={dateRangeValue}
+                  />
+                </Col>
+              )}
+            </Row>
+          </Card>
 
-            <Select
-              placeholder='Transaction Mode'
-              allowClear
-              mode='multiple'
-              style={{ width: 200 }}
-              onChange={(value) =>
-                handleFilterChange("endlTransactionMode", value)
-              }
-              value={endlTransactionMode}
-              options={[
-                { label: "STABLE_COIN_TO_FIAT", value: "STABLE_COIN_TO_FIAT" },
-                { label: "FIAT_TO_STABLE_COIN", value: "FIAT_TO_STABLE_COIN" },
-                { label: "FIAT_TO_FIAT", value: "FIAT_TO_FIAT" },
-              ]}
-            />
-
-            <Select
-              placeholder='Deposit Type'
-              allowClear
-              mode='multiple'
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("depositType", value)}
-              value={depositType}
-              options={[
-                { label: "CREDIT_CARD", value: "CREDIT_CARD" },
-                { label: "DEBIT_CARD", value: "DEBIT_CARD" },
-                { label: "BANK_TRANSFER", value: "BANK_TRANSFER" },
-                { label: "CRYPTO_WALLET", value: "CRYPTO_WALLET" },
-                {
-                  label: "CRYPTO_MANUAL_WALLET",
-                  value: "CRYPTO_MANUAL_WALLET",
-                },
-                { label: "ENDL_ACCOUNT", value: "ENDL_ACCOUNT" },
-              ]}
-            />
-
-            <Select
-              placeholder='Recipient Type'
-              allowClear
-              mode='multiple'
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("recipientType", value)}
-              value={recipientType}
-              options={[
-                { label: "INDIVIDUAL", value: "INDIVIDUAL" },
-                { label: "BUSINESS", value: "BUSINESS" },
-              ]}
-            />
-
-            <Select
-              placeholder='Source Currency'
-              allowClear
-              mode='multiple'
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("sourceCurrency", value)}
-              value={sourceCurrency}
-              options={[
-                { label: "USD", value: "USD" },
-                { label: "EUR", value: "EUR" },
-                { label: "USDC", value: "USDC" },
-              ]}
-            />
-
-            <Select
-              placeholder='Sent/Received'
-              allowClear
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("sentOrReceived", value)}
-              value={sentOrReceived}
-              options={[
-                { label: "SENT", value: "SENT" },
-                { label: "RECEIVED", value: "RECEIVED" },
-              ]}
-            />
-
-            <Select
-              placeholder='Date Range'
-              allowClear
-              style={{ width: 200 }}
-              onChange={(value) => handleFilterChange("dateRange", value)}
-              value={dateRange}
-              options={[
-                { label: "ALL_TIME", value: "ALL_TIME" },
-                { label: "YESTERDAY", value: "YESTERDAY" },
-                { label: "LAST_7_DAYS", value: "LAST_7_DAYS" },
-                { label: "CUSTOM", value: "CUSTOM" },
-              ]}
-            />
-
-            {dateRange === "CUSTOM" && (
-              <RangePicker
-                onChange={(dates) =>
-                  handleFilterChange("dateRangeValue", dates)
-                }
-                value={dateRangeValue}
-              />
-            )}
-
-            <Button onClick={clearFilters}>Clear Filters</Button>
-          </Space>
+          <Table
+            ref={tableRef}
+            columns={columns}
+            dataSource={transactions}
+            rowKey='depositId'
+            loading={loading}
+            onChange={handleTableChange}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              showTotal: (total) => (
+                <Space>
+                  <Text type='secondary'>Total</Text>
+                  <Text strong>{total}</Text>
+                  <Text type='secondary'>transactions</Text>
+                </Space>
+              ),
+              showQuickJumper: true,
+              showLessItems: true,
+              pageSizeOptions: ["10", "20", "50", "100"],
+              size: "default",
+              position: ["bottomRight"],
+              className: "custom-pagination",
+            }}
+            scroll={{ x: 1200 }}
+            className='transactions-table'
+          />
         </Space>
-
-        <Table
-          columns={columns}
-          dataSource={transactions}
-          rowKey='depositId'
-          loading={loading}
-          onChange={handleTableChange}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: totalCount,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} transactions`,
-          }}
-        />
       </Card>
     </div>
   );
