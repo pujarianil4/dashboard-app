@@ -59,7 +59,7 @@ export const Dashboard = () => {
       dateRangeValue,
     });
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (pagination: any, _: any, sorter: any) => {
     setCurrentPage(pagination.current);
     setPageSize(pagination.pageSize);
     setSortField(sorter.field);
