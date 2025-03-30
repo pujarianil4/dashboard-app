@@ -46,10 +46,5 @@ export const getAllTxs = async (params?: PaginationParams): Promise<unknown> => 
 
   console.log("requestBody", requestBody);
   
-
-  return (await apiClient.post("/txn/all", requestBody, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })).data;
+  return (await apiClient.post("/txn/all", requestBody)).data;
 };

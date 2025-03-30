@@ -20,7 +20,6 @@ const Login = () => {
     console.log("Starting login process with values:", values);
     try {
       const response = await mutation.mutateAsync(values);
-      console.log("Raw API response:", response);
 
       // Check if response exists and has expected structure
       if (response && typeof response === "object") {

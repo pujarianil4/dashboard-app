@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getAllTxs } from '../api/transaction';
+import { getTokens } from '../utils/cookie';
+import dayjs from 'dayjs';
 
 const AUTH_KEY = 'isAuthenticated';
 
@@ -14,12 +15,22 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Only check API if we have a stored auth state
-        if (localStorage.getItem(AUTH_KEY) === 'true') {
-          await getAllTxs({page: 1, pageSize: 10});
-          setIsAuthenticated(true);
+        // Check for tokens in cookies
+        const { token, expiryDate } = getTokens();
+        
+        if (token && expiryDate) {
+          // Check if token is expired
+          const isExpired = dayjs(expiryDate).isBefore(dayjs());
+          
+          if (isExpired) {
+            setIsAuthenticated(false);
+            localStorage.removeItem(AUTH_KEY);
+          } else {
+            setIsAuthenticated(true);
+          }
         } else {
           setIsAuthenticated(false);
+          localStorage.removeItem(AUTH_KEY);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
