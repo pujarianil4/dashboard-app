@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAllTxs } from '../api/transaction';
 import { Transaction, ApiResponse } from '../utils/types';
 import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
 
 interface TransactionFilters {
   status: string | null;
@@ -79,38 +80,51 @@ export const useTransactions = (
 ) => {
   const queryParams = getQueryParams(filters,  sortField, sortOrder);
   const chartQueryParams = getQueryParams(filters, );
-  console.log(page, pageSize);
-  
+  console.log(page, pageSize, queryParams);
+  const [tableTxs, setTableTxs] = useState<TableQueryResult>({
+    transactions: [],
+    totalCount: 0,
+  })
+  const [chartTxs, setChartTxs] = useState<Transaction[]>([])
 
+  
+  const shouldSkipQuery = filters.dateRange === 'CUSTOM' && !filters.dateRangeValue;
   const tableQuery = useQuery<TableQueryResult>({
     queryKey: ['transactions', 'table', queryParams],
     queryFn: async () => {
       const response = await getAllTxs(queryParams) as ApiResponse;
-      return {
+      const transformedRes = {
         transactions: transformData(response.data.txns),
         totalCount: response.data.totalCount
-      };
+      }
+      setTableTxs(transformedRes)
+      return transformedRes;
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes,
+    enabled: !shouldSkipQuery,
   });
 
   const chartQuery = useQuery<Transaction[]>({
     queryKey: ['transactions', 'chart', chartQueryParams],
     queryFn: async () => {
       const response = await getAllTxs(chartQueryParams) as ApiResponse;
+      setChartTxs(transformData(response.data.txns));
       return transformData(response.data.txns);
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    enabled: !shouldSkipQuery,
   });
 
+ 
+
   return {
-    transactions: tableQuery.data?.transactions ?? [],
-    chartTransactions: chartQuery.data ?? [],
+    transactions: tableTxs?.transactions ?? [],
+    chartTransactions: chartTxs ?? [],
     tableLoading: tableQuery.isLoading,
     chartLoading: chartQuery.isLoading,
-    totalCount: tableQuery.data?.totalCount ?? 0,
+    totalCount: tableTxs.totalCount,
     refreshTransactions: () => {
       tableQuery.refetch();
       chartQuery.refetch();
