@@ -1,4 +1,4 @@
-import { Form, Input, Button, Card, message } from "antd";
+import { Form, Input, Button, Card, notification } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useLogin } from "../../hooks/useLogin";
 import { useAuth } from "../../hooks/useAuth";
@@ -29,10 +29,11 @@ const Login = () => {
         // First set the authentication state
         login();
 
-        // Show success message
-        message.success({
-          content: "Login successful!",
-          duration: 3,
+        // Show success notification
+        notification.success({
+          message: "",
+          description: "Login successful!",
+          placement: "top",
         });
 
         // Reset form
@@ -45,9 +46,10 @@ const Login = () => {
         }, 100);
       } else {
         console.warn("Unexpected response format:", response);
-        message.error({
-          content: "Login failed: Invalid response format",
-          duration: 3,
+        notification.error({
+          message: "",
+          description: "Login failed: Invalid response format",
+          placement: "top",
         });
       }
     } catch (error: any) {
@@ -58,9 +60,10 @@ const Login = () => {
         error.message ||
         "Login failed. Please check your credentials.";
 
-      message.error({
-        content: errorMessage,
-        duration: 3,
+      notification.error({
+        message: "",
+        description: errorMessage,
+        placement: "top",
       });
     }
   };
@@ -74,10 +77,6 @@ const Login = () => {
           onFinish={onFinish}
           autoComplete='off'
           layout='vertical'
-          initialValues={{
-            email: "kishore@endl.app",
-            password: "G7m@xQ2w!",
-          }}
         >
           <Form.Item
             name='email'

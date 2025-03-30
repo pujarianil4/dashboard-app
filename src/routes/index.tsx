@@ -1,17 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "../components/auth/Login";
-import Dashboard from "../components/dashboard/Dashboard";
-
+import { Dashboard } from "../components/dashboard/Dashboard";
 import { Spin } from "antd";
 import { useAuth } from "../hooks/useAuth";
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-interface PublicRouteProps {
-  children: React.ReactNode;
-}
+import { ProtectedRouteProps, PublicRouteProps } from "../utils/types";
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading } = useAuth();
