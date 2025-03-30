@@ -11,8 +11,6 @@ interface TransactionTableProps {
   currentPage: number;
   pageSize: number;
   totalCount: number;
-  sortField: string | null;
-  sortOrder: "ascend" | "descend" | null;
   onTableChange: (pagination: any, filters: any, sorter: any) => void;
 }
 
@@ -22,8 +20,6 @@ export const TransactionTable = ({
   currentPage,
   pageSize,
   totalCount,
-  sortField,
-  sortOrder,
   onTableChange,
 }: TransactionTableProps) => {
   const getStatusColor = (status: string) => {

@@ -81,9 +81,9 @@ export const useTransactions = (
   const chartQueryParams = getQueryParams(filters);
 
   const tableQuery = useQuery<TableQueryResult>({
-    queryKey: ['transactions', 'table', chartQueryParams],
+    queryKey: ['transactions', 'table', chartQueryParams || queryParams],
     queryFn: async () => {
-      const response = await getAllTxs(chartQueryParams) as ApiResponse;
+      const response = await getAllTxs(chartQueryParams || queryParams) as ApiResponse;
       return {
         transactions: transformData(response.data.txns),
         totalCount: response.data.totalCount

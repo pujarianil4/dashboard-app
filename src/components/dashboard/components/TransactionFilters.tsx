@@ -10,14 +10,6 @@ import {
 } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import {
-  TransactionStatus,
-  EndlTransactionMode,
-  DepositType,
-  RecipientType,
-  SentOrReceived,
-  DateRange,
-} from "../../../utils/types";
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;

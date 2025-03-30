@@ -218,8 +218,6 @@ export const Dashboard = () => {
             currentPage={currentPage}
             pageSize={pageSize}
             totalCount={totalCount}
-            sortField={sortField}
-            sortOrder={sortOrder}
             onTableChange={handleTableChange}
           />
         </Card>

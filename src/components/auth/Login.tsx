@@ -17,13 +17,12 @@ const Login = () => {
   const navigate = useNavigate();
 
   const onFinish = async (values: LoginFormValues) => {
-    console.log("Starting login process with values:", values);
     try {
       const response = await mutation.mutateAsync(values);
 
       // Check if response exists and has expected structure
       if (response && typeof response === "object") {
-        console.log("Login successful, response:", response);
+        // console.log("Login successful, response:", response);
 
         // First set the authentication state
         login();
