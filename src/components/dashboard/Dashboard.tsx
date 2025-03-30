@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   Space,
@@ -50,7 +50,8 @@ export const Dashboard = () => {
   const {
     transactions,
     chartTransactions,
-    loading,
+    tableLoading,
+    chartLoading,
     totalCount,
     refreshTransactions,
   } = useTransactions(currentPage, pageSize, sortField, sortOrder, {
@@ -70,6 +71,10 @@ export const Dashboard = () => {
     setSortField(sorter.field);
     setSortOrder(sorter.order);
   };
+
+  useEffect(() => {
+    console.log(transactions, chartTransactions);
+  }, [transactions, chartTransactions]);
 
   const handleFilterChange = (filterType: string, value: any) => {
     switch (filterType) {
@@ -209,17 +214,18 @@ export const Dashboard = () => {
           onFilterChange={handleFilterChange}
         />
 
-        <TransactionCharts transactions={chartTransactions} loading={loading} />
+        <TransactionCharts
+          transactions={chartTransactions}
+          loading={chartLoading}
+        />
 
         <Card className='dashboard-card'>
           <TransactionTable
             transactions={transactions}
-            loading={loading}
+            loading={tableLoading}
             currentPage={currentPage}
             pageSize={pageSize}
             totalCount={totalCount}
-            sortField={sortField}
-            sortOrder={sortOrder}
             onTableChange={handleTableChange}
           />
         </Card>

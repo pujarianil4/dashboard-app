@@ -2,7 +2,6 @@ import { Card, Row, Col, Statistic, Spin } from "antd";
 import { Pie, Line } from "@ant-design/charts";
 import { Transaction } from "../../../utils/types";
 import dayjs from "dayjs";
-import { useEffect } from "react";
 
 interface TransactionChartsProps {
   transactions: Transaction[];
