@@ -91,10 +91,6 @@ export const TransactionCharts = ({
     responsive: true,
   };
 
-  useEffect(() => {
-    console.log("transactions", currencyData, statusTimelineData);
-  }, [transactions]);
-
   return (
     <div className='transaction-charts'>
       <Row gutter={[16, 16]}>
