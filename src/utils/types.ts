@@ -17,6 +17,7 @@ export interface Transaction {
   status: string;
   depositId: string;
   sentOrReceived: string;
+  endlTransactionMode: string;
 }
 
 export interface ApiResponse {
@@ -42,6 +43,7 @@ export interface ApiTransaction {
   fxRate: string;
   status: string;
   sentOrReceived: string;
+  endITransactionMode: string;
 }
 
 export type TransactionStatus = 'INITIATED' | 'IN_REVIEW' | 'PENDING' | 'COMPLETE' | 'REJECTED';
