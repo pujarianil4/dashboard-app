@@ -1,4 +1,4 @@
-import axios , {  AxiosRequestHeaders,}from "axios";
+import axios from "axios";
 import { encryptPayload, decryptPayload, skipEncryptionEndpoints } from "../utils/crypto";
 import { clearTokens, getTokens, saveTokens } from '../utils/cookie';
 

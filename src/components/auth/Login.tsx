@@ -54,11 +54,8 @@ const Login = () => {
       }
     } catch (error: any) {
       console.error("Login error details:", error);
-      // Check if error has a response from the server
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Login failed. Please check your credentials.";
+
+      const errorMessage = "Login failed. Please check your credentials.";
 
       notification.error({
         message: "",
@@ -75,12 +72,8 @@ const Login = () => {
           form={form}
           name='login'
           onFinish={onFinish}
-          autoComplete='off'
+          autoComplete='on'
           layout='vertical'
-          initialValues={{
-            email: "kishore@endl.app",
-            password: "G7m@xQ2w!",
-          }}
         >
           <Form.Item
             name='email'
