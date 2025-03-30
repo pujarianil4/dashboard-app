@@ -8,8 +8,8 @@ type SentOrReceived = 'SENT' | 'RECEIVED';
 type DateRange = 'ALL_TIME' | 'YESTERDAY' | 'LAST_7_DAYS' | 'CUSTOM';
 
 interface PaginationParams {
-  page: number;
-  pageSize: number;
+  page?: number;
+  pageSize?: number;
   sortBy?: string | null;
   status?: TransactionStatus | null;
   endlTransactionMode?: EndlTransactionMode[] | null;
@@ -24,10 +24,12 @@ interface PaginationParams {
 
 export const getAllTxs = async (params?: PaginationParams): Promise<unknown> => {
   const requestBody: any = {
-    page: params?.page || 0,
-    size: params?.pageSize || 10,
     sortBy: params?.sortBy || 'id,desc',
   };
+
+  // Only add pagination if provided
+  if (params?.page !== undefined) requestBody.page = params.page;
+  if (params?.pageSize !== undefined) requestBody.size = params.pageSize;
 
   // Only add filters if they are not null
   if (params?.status) requestBody.status = params.status;

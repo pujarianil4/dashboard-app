@@ -11,19 +11,19 @@ import {
   notification,
 } from "antd";
 import { useTransactions } from "../../hooks/useTransactions";
-import { StatisticsCards } from "./components/StatisticsCards";
 import { TransactionFilters } from "./components/TransactionFilters";
 import { TransactionTable } from "./components/TransactionTable";
 import dayjs from "dayjs";
 import {
   ClearOutlined,
   ReloadOutlined,
-  TransactionOutlined,
   LogoutOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { logout as logoutApi } from "../../api/auth";
 import "./Dashboard.scss";
+import { TransactionCharts } from "./components/TransactionCharts";
 
 const { Title } = Typography;
 
@@ -47,17 +47,22 @@ export const Dashboard = () => {
   >(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const { transactions, loading, totalCount, refreshTransactions } =
-    useTransactions(currentPage, pageSize, sortField, sortOrder, {
-      status,
-      endlTransactionMode,
-      depositType,
-      recipientType,
-      sourceCurrency,
-      sentOrReceived,
-      dateRange,
-      dateRangeValue,
-    });
+  const {
+    transactions,
+    chartTransactions,
+    loading,
+    totalCount,
+    refreshTransactions,
+  } = useTransactions(currentPage, pageSize, sortField, sortOrder, {
+    status,
+    endlTransactionMode,
+    depositType,
+    recipientType,
+    sourceCurrency,
+    sentOrReceived,
+    dateRange,
+    dateRangeValue,
+  });
 
   const handleTableChange = (pagination: any, _: any, sorter: any) => {
     setCurrentPage(pagination.current);
@@ -151,11 +156,9 @@ export const Dashboard = () => {
           <Row justify='space-between' align='middle'>
             <Col>
               <Space>
-                <TransactionOutlined
-                  style={{ fontSize: 24, color: "#1890ff" }}
-                />
+                <DashboardOutlined style={{ fontSize: 24, color: "#1890ff" }} />
                 <Title level={3} style={{ margin: 0 }}>
-                  Transaction History
+                  Transaction Dashboard
                 </Title>
               </Space>
             </Col>
@@ -193,13 +196,6 @@ export const Dashboard = () => {
           </Row>
         </Card>
 
-        <StatisticsCards
-          totalCount={totalCount}
-          activeFiltersCount={activeFiltersCount}
-          currentPage={currentPage}
-          totalPages={Math.ceil(totalCount / pageSize)}
-        />
-
         <TransactionFilters
           status={status}
           endlTransactionMode={endlTransactionMode}
@@ -212,6 +208,8 @@ export const Dashboard = () => {
           activeFiltersCount={activeFiltersCount}
           onFilterChange={handleFilterChange}
         />
+
+        <TransactionCharts transactions={chartTransactions} loading={loading} />
 
         <Card className='dashboard-card'>
           <TransactionTable

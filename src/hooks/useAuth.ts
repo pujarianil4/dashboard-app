@@ -16,7 +16,7 @@ export const useAuth = () => {
       try {
         // Only check API if we have a stored auth state
         if (localStorage.getItem(AUTH_KEY) === 'true') {
-          await getAllTxs();
+          await getAllTxs({page: 1, pageSize: 10});
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);

@@ -4,10 +4,11 @@ import { clearTokens, getTokens, saveTokens } from '../utils/cookie';
 
 
 const SECRET_KEY = import.meta.env.VITE_SECRET_KEY;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // Create an Axios instance
 const apiClient = axios.create({
-    baseURL: "https://qa-api.endl.xyz/api/v1", // Adjust your API base URL
+    baseURL: BASE_URL, // Adjust your API base URL
     headers: {
       "Content-Type": "application/json",
     },

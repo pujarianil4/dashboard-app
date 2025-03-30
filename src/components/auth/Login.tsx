@@ -77,6 +77,10 @@ const Login = () => {
           onFinish={onFinish}
           autoComplete='off'
           layout='vertical'
+          initialValues={{
+            email: "kishore@endl.app",
+            password: "G7m@xQ2w!",
+          }}
         >
           <Form.Item
             name='email'
@@ -115,5 +119,4 @@ const Login = () => {
     </div>
   );
 };
-
 export default Login;
