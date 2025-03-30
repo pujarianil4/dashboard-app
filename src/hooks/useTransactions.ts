@@ -36,7 +36,7 @@ const transformData = (txns: any[]): Transaction[] => {
   }));
 };
 
-const getQueryParams = (filters: TransactionFilters, page?: number, pageSize?: number, sortField?: string | null, sortOrder?: 'ascend' | 'descend' | null) => {
+const getQueryParams = (filters: TransactionFilters,  sortField?: string | null, sortOrder?: 'ascend' | 'descend' | null, page?: number, pageSize?: number,) => {
   let startDate = null;
   let endDate = null;
   if (filters.dateRange === 'CUSTOM' && filters.dateRangeValue) {
@@ -77,13 +77,15 @@ export const useTransactions = (
   sortOrder: 'ascend' | 'descend' | null,
   filters: TransactionFilters
 ) => {
-  const queryParams = getQueryParams(filters, page, pageSize, sortField, sortOrder);
-  const chartQueryParams = getQueryParams(filters);
+  const queryParams = getQueryParams(filters,  sortField, sortOrder);
+  const chartQueryParams = getQueryParams(filters, );
+  console.log(page, pageSize);
+  
 
   const tableQuery = useQuery<TableQueryResult>({
-    queryKey: ['transactions', 'table', chartQueryParams || queryParams],
+    queryKey: ['transactions', 'table', queryParams],
     queryFn: async () => {
-      const response = await getAllTxs(chartQueryParams || queryParams) as ApiResponse;
+      const response = await getAllTxs(queryParams) as ApiResponse;
       return {
         transactions: transformData(response.data.txns),
         totalCount: response.data.totalCount
@@ -93,23 +95,25 @@ export const useTransactions = (
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
-  // const chartQuery = useQuery<Transaction[]>({
-  //   queryKey: ['transactions', 'chart', chartQueryParams],
-  //   queryFn: async () => {
-  //     const response = await getAllTxs(chartQueryParams) as ApiResponse;
-  //     return transformData(response.data.txns);
-  //   },
-  //   staleTime: 30000, // Consider data fresh for 30 seconds
-  //   gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-  // });
+  const chartQuery = useQuery<Transaction[]>({
+    queryKey: ['transactions', 'chart', chartQueryParams],
+    queryFn: async () => {
+      const response = await getAllTxs(chartQueryParams) as ApiResponse;
+      return transformData(response.data.txns);
+    },
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+  });
 
   return {
     transactions: tableQuery.data?.transactions ?? [],
-    chartTransactions: tableQuery.data?.transactions ?? [],
-    loading: tableQuery.isLoading ,
+    chartTransactions: chartQuery.data ?? [],
+    tableLoading: tableQuery.isLoading,
+    chartLoading: chartQuery.isLoading,
     totalCount: tableQuery.data?.totalCount ?? 0,
     refreshTransactions: () => {
       tableQuery.refetch();
+      chartQuery.refetch();
     },
   };
 }; 

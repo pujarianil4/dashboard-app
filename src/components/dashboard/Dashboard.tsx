@@ -50,7 +50,8 @@ export const Dashboard = () => {
   const {
     transactions,
     chartTransactions,
-    loading,
+    tableLoading,
+    chartLoading,
     totalCount,
     refreshTransactions,
   } = useTransactions(currentPage, pageSize, sortField, sortOrder, {
@@ -209,12 +210,15 @@ export const Dashboard = () => {
           onFilterChange={handleFilterChange}
         />
 
-        <TransactionCharts transactions={chartTransactions} loading={loading} />
+        <TransactionCharts
+          transactions={chartTransactions}
+          loading={chartLoading}
+        />
 
         <Card className='dashboard-card'>
           <TransactionTable
             transactions={transactions}
-            loading={loading}
+            loading={tableLoading}
             currentPage={currentPage}
             pageSize={pageSize}
             totalCount={totalCount}
