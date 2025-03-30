@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAllTxs } from '../api/transaction';
 import { Transaction, ApiResponse } from '../utils/types';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import {  useState } from 'react';
 
 interface TransactionFilters {
   status: string | null;
