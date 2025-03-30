@@ -34,6 +34,7 @@ apiClient.interceptors.request.use((config) => {
     const { token } = getTokens();
     if (token) {
       config.headers = Object.assign(config.headers || {}, {
+        ...config.headers,
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       });
@@ -57,14 +58,17 @@ apiClient.interceptors.response.use((response) => {
         try {
             const decryptedResponse = decryptPayload(response.data.response, SECRET_KEY);
 
-          if(decryptedResponse.data && response.config.url === "/user/login")
-          saveTokens(decryptedResponse.data?.userId, decryptedResponse.data?.token )
-            
-          if (
-            response.config.url === "/user/logout"
-          ) {
-            clearTokens()
-          }
+            if(decryptedResponse.data && response.config.url === "/user/login"){
+             
+              saveTokens(
+                decryptedResponse.data?.userId, 
+                decryptedResponse.data?.token,
+                decryptedResponse.data?.expiryDate
+              );
+            }
+            if (response.config.url === "/user/logout") {
+              clearTokens();
+            }
             return { ...response, data: decryptedResponse };
         } catch (error) {
             console.error("Decryption Error:", error);
