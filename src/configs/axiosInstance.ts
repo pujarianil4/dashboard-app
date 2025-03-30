@@ -8,7 +8,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // Create an Axios instance
 const apiClient = axios.create({
-    baseURL: BASE_URL, // Adjust your API base URL
+    baseURL: BASE_URL, 
     headers: {
       "Content-Type": "application/json",
     },
