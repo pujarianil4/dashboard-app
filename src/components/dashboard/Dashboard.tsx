@@ -72,10 +72,6 @@ export const Dashboard = () => {
     setSortOrder(sorter.order);
   };
 
-  useEffect(() => {
-    console.log(transactions, chartTransactions);
-  }, [transactions, chartTransactions]);
-
   const handleFilterChange = (filterType: string, value: any) => {
     switch (filterType) {
       case "status":

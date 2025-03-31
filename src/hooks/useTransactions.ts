@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAllTxs } from '../api/transaction';
 import { Transaction, ApiResponse } from '../utils/types';
 import dayjs from 'dayjs';
-import {  useState } from 'react';
+import { useRef, useEffect } from 'react';
 
 interface TransactionFilters {
   status: string | null;
@@ -79,52 +79,66 @@ export const useTransactions = (
   filters: TransactionFilters
 ) => {
   const queryParams = getQueryParams(filters,  sortField, sortOrder);
-  const chartQueryParams = getQueryParams(filters, );
-  console.log(page, pageSize, queryParams);
-  const [tableTxs, setTableTxs] = useState<TableQueryResult>({
-    transactions: [],
-    totalCount: 0,
-  })
-  const [chartTxs, setChartTxs] = useState<Transaction[]>([])
+  const chartQueryParams = getQueryParams(filters);
 
-  
+  // Check if we should skip the query
   const shouldSkipQuery = filters.dateRange === 'CUSTOM' && !filters.dateRangeValue;
+
+  // Keep track of previous data
+  const previousDataRef = useRef<{
+    transactions: Transaction[];
+    chartTransactions: Transaction[];
+    totalCount: number;
+  }>({
+    transactions: [],
+    chartTransactions: [],
+    totalCount: 0,
+  });
+
   const tableQuery = useQuery<TableQueryResult>({
     queryKey: ['transactions', 'table', queryParams],
     queryFn: async () => {
       const response = await getAllTxs(queryParams) as ApiResponse;
-      const transformedRes = {
+      return {
         transactions: transformData(response.data.txns),
         totalCount: response.data.totalCount
-      }
-      setTableTxs(transformedRes)
-      return transformedRes;
+      };
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes,
-    enabled: !shouldSkipQuery,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    enabled: !shouldSkipQuery, // Skip query if custom date range is selected but dates are not set
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 
   const chartQuery = useQuery<Transaction[]>({
     queryKey: ['transactions', 'chart', chartQueryParams],
     queryFn: async () => {
       const response = await getAllTxs(chartQueryParams) as ApiResponse;
-      setChartTxs(transformData(response.data.txns));
       return transformData(response.data.txns);
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    enabled: !shouldSkipQuery,
+    enabled: !shouldSkipQuery, // Skip query if custom date range is selected but dates are not set
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 
- 
+  // Update previous data when new data arrives
+  useEffect(() => {
+    if (tableQuery.data) {
+      previousDataRef.current.transactions = tableQuery.data.transactions;
+      previousDataRef.current.totalCount = tableQuery.data.totalCount;
+    }
+    if (chartQuery.data) {
+      previousDataRef.current.chartTransactions = chartQuery.data;
+    }
+  }, [tableQuery.data, chartQuery.data]);
 
   return {
-    transactions: tableTxs?.transactions ?? [],
-    chartTransactions: chartTxs ?? [],
-    tableLoading: tableQuery.isLoading,
-    chartLoading: chartQuery.isLoading,
-    totalCount: tableTxs.totalCount,
+    transactions: shouldSkipQuery ? previousDataRef.current.transactions : (tableQuery.data?.transactions ?? []),
+    chartTransactions: shouldSkipQuery ? previousDataRef.current.chartTransactions : (chartQuery.data ?? []),
+    tableLoading: tableQuery.isLoading || tableQuery.isFetching,
+    chartLoading: chartQuery.isLoading || chartQuery.isFetching,
+    totalCount: shouldSkipQuery ? previousDataRef.current.totalCount : (tableQuery.data?.totalCount ?? 0),
     refreshTransactions: () => {
       tableQuery.refetch();
       chartQuery.refetch();
